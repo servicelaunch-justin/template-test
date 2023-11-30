@@ -1,0 +1,21 @@
+- name: Install Apt Cacher and apache2
+  apt:
+    pkg: 
+      - apt-cacher
+      - apache2
+    state: latest
+    update_cache: true
+
+- name: Enable Apt Cacher Auto Start
+  lineinfile: 
+    path: /etc/default/apt-cacher
+    regexp: autostart
+    line: autostart = 1 
+  notify: restart_apache
+
+- name: Set Apt Cacher Allowed Hosts
+  lineinfile: 
+    path: /etc/apt-cacher/apt-cacher.conf
+    regexp: 
+    line: allowed_hosts = * 
+  notify: restart_apt_cacher

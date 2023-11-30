@@ -1,0 +1,179 @@
+
+ssh_pwauth: true 
+
+users:
+  - default
+  - name: bluedata 
+    gecos: bluedata 
+    shell: /bin/bash
+    primary_group: bluedata 
+    groups: users, admin, shadow, wheel
+    lock_passwd: false 
+    passwd: $1$2mTqKlOR$E9UTqfNLzKo8nfdVt7oOi0  #bluedata  `openssl passwd -1`
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+write_files:
+  - path: /bluedata.sh
+    owner: root:root
+    permissions: '0744'
+    content: |
+      #!/bin/bash
+      set -x
+      if [ -d /opt/bluedata ] 
+      then 
+        echo "/opt/bluedata exists, nothing to do." 
+        sleep infinity
+      else
+        /opt/hpe-cp-rhel-release-5.4.1-3073.bin --skipeula --default-password asdf123 #--worker-agent-install
+      fi
+  - path: /etc/systemd/system/bluedata.service 
+    owner: root:root
+    permissions: '0644'
+    content: |
+      [Unit]
+      Description=Install Bluedata
+      After=network.target
+      [Service]
+      Type=simple
+      Restart=on-success
+      RestartSec=1
+      User=bluedata
+      Group=bluedata
+      ExecStart=/bluedata.sh
+      [Install]
+      WantedBy=multi-user.target 
+  - content: 10.0.1.* ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBF8xhcoM0ukRZnF6J975fil6IJ+2kEpriyFrwZvE73GUQjPvUc+Evwjs1ucz63eoCNGBw1AvqaeZo5bI/C3emqs= 
+    path: /etc/ssh/ssh_known_hosts
+    owner: root:root
+    permissions: '0664'
+  - path: /tmp/home/bluedata/.ssh/authorized_keys
+    owner: root:root
+    permissions: '0600'
+    content: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDq0aXCD/jhAlfQepPOZ3S4SQRW/F6BRYt2IY7Ul7Iaqr2vbKvvs3w2Wm/4tMiIGjC0uVEpKcxROEaJQQGeuzMq5mwsKIirmVoZDt00/X6R8+6xd5hCN4goIOwYyIS5MTxS8WRxwuk8/WnI/24RyLujoEhx4ZijJyTeU/4mHghwEDvs6x2Kg9we5iB3vzwKX0xU0jxNJ4tFugaXQ/JQnOaHXSgwW02gY3IRRL2dhip2vFy2Th30s2XOLLnh5kP6XyfVZShzeNSuDuJcJqGgQGGKr0PTPITMhPTEmbLMH149CNUldkhEEpuTjP5254sbId4h5pDR/vmhTUpcA7HsAN7H bluedata 
+  - path: /tmp/home/bluedata/.ssh/id_rsa.pub
+    owner: root:root
+    permissions: '0600'
+    content: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDq0aXCD/jhAlfQepPOZ3S4SQRW/F6BRYt2IY7Ul7Iaqr2vbKvvs3w2Wm/4tMiIGjC0uVEpKcxROEaJQQGeuzMq5mwsKIirmVoZDt00/X6R8+6xd5hCN4goIOwYyIS5MTxS8WRxwuk8/WnI/24RyLujoEhx4ZijJyTeU/4mHghwEDvs6x2Kg9we5iB3vzwKX0xU0jxNJ4tFugaXQ/JQnOaHXSgwW02gY3IRRL2dhip2vFy2Th30s2XOLLnh5kP6XyfVZShzeNSuDuJcJqGgQGGKr0PTPITMhPTEmbLMH149CNUldkhEEpuTjP5254sbId4h5pDR/vmhTUpcA7HsAN7H bluedata 
+  - path: /tmp/home/bluedata/.ssh/id_rsa
+    owner: root:root
+    permissions: '0600'
+    content: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEpgIBAAKCAQEA6tGlwg/44QJX0HqTzmd0uEkEVvxegUWLdiGO1JeyGqq9r2yr
+      77N8Nlpv+LTIiBowtLlRKSnMUThGiUEBnrszKuZsLCiIq5laGQ7dNP1+kfPusXeY
+      QjeIKCDsGMiEuTE8UvFkccLpPP1pyP9uEci7o6BIceGYoyck3lP+Jh4IcBA77Osd
+      ioPcHuYgd788Cl9MVNI8TSeLRboGl0PyUJzmh10oMFtNoGNyEUS9nYYqdrxctk4d
+      9LNlziy54eZD+l8n1WUoc3jUrg7iXCahoEBhiq9D0zyEzIT0xJmyzB9ePQjVJXZI
+      RBKbk4z+dueLGyHeIeaQ0f75oU1KXAOx7ADexwIDAQABAoIBAQCygFoMEo4zpc9R
+      WMzhG3371O2qnj/M7yvbyhjEfOhUIzT8lJSDK6Khws/ZdLv30kjyKOmMbAy4NRpR
+      ngv4OP/lfbH/Q3TZVULLR6RactTzaEYru+kPdR1Yu+Yd1Ngn20irGHsti2g4B7+R
+      nrJybHBPKznG8CJS7B+3rovFOBFb9VZ4vXgso2PEzMCtvu35pFHzjdkzuIe8TWRQ
+      UNGdSJzZT5G/AaQO60oUKyIK+H7EfQ2JzKFXEjc1xhJw2y9HNlVjnr+r0XDbMism
+      kxDy0FhsvQCGos25lATQVjfmL396TjjhXiqyAXDmMc66BPaJliXpUIV8kOYVK/d5
+      hw3TAuRJAoGBAPk1ydmGmCGdX5P9Vmt3VxXd7PT3l7jDK3Txq2YlDLmWEbHGyGzS
+      4R9AuemcWICzI2RBOBNpb8QWyvY06I2ZRLppes4otjN0EM9YfHEICp6y6JlgSCfV
+      mQHwqZWeSmbUp8ASfGHDp/yCs+a2Aclx1KIf/Bp6/T0G116zfSCK6dEtAoGBAPE3
+      e3QnNwhcJQvkck1SPOlEkwa7415VCy1Gq3kuuOX2pFRIszr+HQLF/d1sUhJMeGLz
+      VJUXrxQTcuKUZP4TgIdCOFmcXvfhcaeyKQs2PGTQ+bi7J8SSe9+mF1dCMbMKJirT
+      83N9EhAsZxfjU+T4kkYrVK2diDiLy3hEueVEP6BDAoGBANCn0JFouAetFFF8U9c2
+      3JtabQPOKiJwhvorPi8P5k+c7sPChB1Zk1PvhbmrRg677m4KjUDzjrjHvLfYJL4q
+      DflmR4RFYghCrbBtjgO1j+7ALS/+BWwU0z9kmRjEp9bhRnLzB2FzyDsL1ETfLy/T
+      Nw1nalVhlJZ8G+cWsTWGGa8hAoGBAKUxi/hmCshM4oocbzMIyPIvpkkMT5AAyeC9
+      7xzUpIfIu42FJEmYUaHemhcT4bjqad/KKPjZ+WrUTu9hFTDzhigbb5/e+SLlYAKq
+      fnVRNVcNzpd2hKuYbgEiLAX0LTkiEDVwZd+HneE5p3iylHfQy8wGTL2BjxK6miPJ
+      XU3nyXMlAoGBAKcLNHN+fc8rPRoUWxkV8YNAp3w1aTQNZJbetWdDBw5fkcSrrolO
+      z7/2zAczcisxk9cVEYNbOvBjyPP7qd8rD8IcKxPTmldL4OYPT0s6fIiVGV1zQG7n
+      2uXYLIB9wcwIn4X9MQsOj8P/a9xF9nrcMm4iNiThgmlziD9yhZ8kodSU
+      -----END RSA PRIVATE KEY-----
+
+runcmd:
+  # https://bugzilla.redhat.com/show_bug.cgi?id=1424612
+  # sudo tail -f /var/log/messages |grep cloud-init  
+  - echo " -=-=-=-=-= start user_data script =-=-=-=-=-=- "
+  - |
+    set -x 
+    ls -lha /tmp/home/bluedata/.ssh/
+    mv -v /tmp/home/bluedata/.ssh /home/bluedata/.
+    chown -vR bluedata:bluedata /home/bluedata/.ssh
+    chmod -v 700 /home/bluedata/.ssh
+    chmod -v 600 /home/bluedata/.ssh/*
+    yum update --assumeyes
+    if [ $(hostname -I) == "10.0.1.101" ] 
+    then
+      until curl -Is http://10.0.0.10/db06eb7498b151d8401fff327fdc9dba |grep "HTTP/1.1 200 OK"; do echo "waiting..."; sleep 1; done;
+      until curl -o /opt/hpe-cp-rhel-release-5.4.1-3073.bin -C - http://10.0.0.10/hpe-cp-rhel-release-5.4.1-3073.bin; do echo "retry..."; sleep 1; done;
+      chown bluedata:bluedata  /opt/hpe-cp-rhel-release-5.4.1-3073.bin
+      chmod u+x /opt/hpe-cp-rhel-release-5.4.1-3073.bin
+      #chown bluedata:bluedata /bluedata.sh
+      #systemctl enable bluedata
+      #systemctl start bluedata
+    else
+      echo "..."
+    fi
+  ### 5.3
+  #- curl -OL https://bdk8s.s3.us-east-2.amazonaws.com/5.3/3031/hpe-cp-rhel-release-5.3-3031.bin 
+  #- chmod u+x ./hpe-cp-rhel-release-5.3-3031.bin
+  #- ./hpe-cp-rhel-release-5.3-3031.bin --skipeula --default-password abc123none
+  ### 5.4
+  #- curl -OL https://ezmeral-platform-releases.s3.amazonaws.com/5.4/3064/hpe-cp-rhel-release-5.4-3064.bin
+  #- chmod u+x ./hpe-cp-rhel-release-5.4-3064.bin
+  #- ./hpe-cp-rhel-release-5.4-3064.bin --skipeula --default-password abc123none
+  - echo " -=-=-=-=-= end user_data script =-=-=-=-=-=- "
+
+ssh_keys:
+  rsa_private: |
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIEowIBAAKCAQEA5nXPnAbep1Krei0i4ZCAqYW+9wJc0V1FGlunJD+7RHC8MNWs
+    fKVE+rZhNYuxDDhgT7iP+7D5UfLL3m4Mi8NrXKBC3jOKYdCq8zMm3TkhAMOOzhOZ
+    FfolsN3KE1XxjUK3j4uYvcYwzLu5yNOAmcahkxdVcjU+2xwh43lFwsgRnpTC7N57
+    X9O3OHfJj7WWdubwZAuC1gLWRnEQERLUakQ6JDAqZvaJ7N/YlE93Qgr2WmEMSXvo
+    i8hwK79PdF40QfVMs923x3fgfXS68bPdYRZ1vP2NPY+jZVvf9y7EbU6KhQWISucn
+    tVLc/R68YKxc1OCFmnEjZjvAw5+fTM1LlzzHuQIDAQABAoIBABFx/5o/BuHBp0tj
+    WU2b47Fxd2g5XI9YsR9yqq9ax7FBm21S73CsDhGwdqFYBrn3FotSXEvgNK9YYshe
+    qkJ2M41acFVjr2kCI76vM5TxeycUpp3A7Ai2292MnHxkOBnKYBzUo2ZSN2V4HHMw
+    V37Mg3SgAo7Xqv9pHMOcbYR2IqdPVL7pSdB9YQtLzY7cVMQEx9aMpszekEM01Mto
+    1BHm6D+S9xkbeN4AYPTjJ3MBgLbmXW3JGZZruhAF1CdpYJSFrQN48DrA2zwprzdS
+    1lU1RXrpO+Unaueb/zwyadPap9zxNP8U9y1i4VadgMxsEcA6dCaIMw2u8JFrGy9W
+    pT25TGUCgYEA9rBalk4J4SDB83CSAzh+3BXegrCCU74CrVeeU74licUbHQ22SwC5
+    gMSZP9296VS+m71+2tIyyvTXTC1psNZema93zygwdjxb8erkXkRB8j2C8BlSxUmq
+    qKDPEQIWf9j9cNm2GShGxke/baeL0cGivuq2HSoDZnQL74Wct5RK6RsCgYEA7yil
+    gI8sKcHMzprjMczaVaswmD5oP/pC77CmiEWWPoLvWP6BHIffmSBcW+sJnu7frMJZ
+    qS0obfYMLVIgHi5tLug5wJg0ekAEby+tTUMjvVW/Tofq63jJyXc2Dm6MUrrWgTZd
+    4tNTrPMLo3VUCJvSlAN2nu7eSx8JJ4ZIVkaek7sCgYEAtxU1df3fCS1lpIX0Z92D
+    EVZNuNLFNt97Xyj7AY3KkFAwCkUF+O5FvpKqZiLs8oIJoM5nmoGMXuKN8yR1H2BJ
+    /2eh1KYwKWAsoQPCj0+7XcxXJFi2/GLq/JG0fBv/lMz3c8ywgEVLGZdgNEK322oJ
+    ngXWORjYQy53OUIBiKHPYucCgYAZZ+X8/DiizvWk1QthlPN0ulTVN3v3n+xQbiGi
+    xFGrnlkyyQaKM1zrdWaaVSOWgKW+Qn8n26Y52DN+9QR4cFIk84J/FSwt+HMAJL5y
+    QLmhOWSzQPkRvqkg/8r8SX4ao8J5w37Bw9VVwBPyb1pX98Ws95k4VQPEUy2zxy4U
+    DDh4VQKBgCH5yn1hw+EU5bpFlWFyoM7ILGCO4ow1l2rAFqVnCNttZ/5P8T/KsFHd
+    zLagQUg6KHPNa6202Jmc4XPqx/wuMO8nOTz7XEjKnjMo4ucRAQjOXggl9fJmclaU
+    kf8QFxVe3UJV4Tm6UnIJuEUf6TJALtJ5uKL6/jHOZ7755qKb1b1K
+    -----END RSA PRIVATE KEY-----
+
+  rsa_public: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDmdc+cBt6nUqt6LSLhkICphb73AlzRXUUaW6ckP7tEcLww1ax8pUT6tmE1i7EMOGBPuI/7sPlR8svebgyLw2tcoELeM4ph0KrzMybdOSEAw47OE5kV+iWw3coTVfGNQrePi5i9xjDMu7nI04CZxqGTF1VyNT7bHCHjeUXCyBGelMLs3ntf07c4d8mPtZZ25vBkC4LWAtZGcRAREtRqRDokMCpm9ons39iUT3dCCvZaYQxJe+iLyHArv090XjRB9Uyz3bfHd+B9dLrxs91hFnW8/Y09j6NlW9/3LsRtToqFBYhK5ye1Utz9HrxgrFzU4IWacSNmO8DDn59MzUuXPMe5 root@localhost
+
+  dsa_private: |
+    -----BEGIN DSA PRIVATE KEY-----
+    MIIBvAIBAAKBgQChi1s060XaXOhAyHqILzmdJ4Qw8VXC7eeaq7/Lf/F74kfiX+C/
+    q7iYZ9ANFeXvIARTzVQqUMvgvHsFm58pxv4R2a1c5ZpV6phkWtAZjQ8DMq1Z6ChM
+    PsdX4z8b239Yo2CDk79yUtVJxEVAnXhMvorSqVxnpyWcQM/XXrYNnFE30wIVANBH
+    a1gKHcNNZfswmrHQIbYOgbl9AoGBAJOJmUBYTcpk0MmFKURQvYK2rHnEhaVV3PD5
+    W9j08SZcpKrIrDaHCVnOrqGwmZRxxnXwPRvX8D7ZzKvGJHaaP2ezinZHz8AVDSLp
+    ZjtECSySM8BEgkY6Y69f5yJ0iZyE3xuwceqe51P+FlqItCQyCmxrVaneQcyVPaDO
+    WnpT9zmJAoGBAKCqAWvsIRfm6M78rsCVMt2C64CGhimYf6Cb48lpF97UcfdEVcsu
+    VXYLvvY6xX8kaDzcJHJQo2+yqBuQiGAhOrgV/XPLrm+zR2Vn5L6pKkWCpf71pEwF
+    Un4DwTle8J9fPFjlB0HwUZfbD3mWcJPCFov6tNaWmCV6KT4D0TtrbIllAhQpMFP5
+    kWVFYMK8cCOz1yPXpSsZDg==
+    -----END DSA PRIVATE KEY-----
+
+  dsa_public: ssh-dss AAAAB3NzaC1kc3MAAACBAKGLWzTrRdpc6EDIeogvOZ0nhDDxVcLt55qrv8t/8XviR+Jf4L+ruJhn0A0V5e8gBFPNVCpQy+C8ewWbnynG/hHZrVzlmlXqmGRa0BmNDwMyrVnoKEw+x1fjPxvbf1ijYIOTv3JS1UnERUCdeEy+itKpXGenJZxAz9detg2cUTfTAAAAFQDQR2tYCh3DTWX7MJqx0CG2DoG5fQAAAIEAk4mZQFhNymTQyYUpRFC9grasecSFpVXc8Plb2PTxJlykqsisNocJWc6uobCZlHHGdfA9G9fwPtnMq8Ykdpo/Z7OKdkfPwBUNIulmO0QJLJIzwESCRjpjr1/nInSJnITfG7Bx6p7nU/4WWoi0JDIKbGtVqd5BzJU9oM5aelP3OYkAAACBAKCqAWvsIRfm6M78rsCVMt2C64CGhimYf6Cb48lpF97UcfdEVcsuVXYLvvY6xX8kaDzcJHJQo2+yqBuQiGAhOrgV/XPLrm+zR2Vn5L6pKkWCpf71pEwFUn4DwTle8J9fPFjlB0HwUZfbD3mWcJPCFov6tNaWmCV6KT4D0TtrbIll root@localhost
+
+  ecdsa_private: |
+    -----BEGIN EC PRIVATE KEY-----
+    MHcCAQEEIAtA5nl5UyBYJJl2TAXIBQ9MQj1A4oWvTpRStQivpr+6oAoGCCqGSM49
+    AwEHoUQDQgAEXzGFygzS6RFmcXon3vl+KXogn7aQSmuLIWvBm8TvcZRCM+9Rz4S/
+    COzW5zPrd6gI0YHDUC+pp5mjlsj8Ld6aqw==
+    -----END EC PRIVATE KEY-----
+
+  ecdsa_public: ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBF8xhcoM0ukRZnF6J975fil6IJ+2kEpriyFrwZvE73GUQjPvUc+Evwjs1ucz63eoCNGBw1AvqaeZo5bI/C3emqs= root@localhost
+

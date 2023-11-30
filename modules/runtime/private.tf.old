@@ -1,0 +1,356 @@
+
+/*
+  private servers 
+*/
+resource "aws_security_group" "private" {
+  name        = "vpc_private"
+  description = "Allow incoming database connections."
+
+  /*
+    ingress { # SQL Server
+        from_port = 1433
+        to_port = 1433
+        protocol = "tcp"
+        security_groups = ["${aws_security_group.web.id}"]
+    }
+    ingress { # MySQL
+        from_port = 3306
+        to_port = 3306
+        protocol = "tcp"
+        security_groups = ["${aws_security_group.web.id}"]
+    }
+    */
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.private_subnet_cidr]
+  }
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.private_subnet_cidr]
+  }
+
+  ingress {
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  ingress {
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  ingress {
+    from_port   = 8044
+    to_port     = 8044
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  ingress {
+    from_port   = 8090
+    to_port     = 8090
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${var.vpc_cidr}"]
+  }
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["${var.vpc_cidr}"]
+  }
+
+  egress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["${var.vpc_cidr}"]
+  }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  vpc_id = aws_vpc.default.id
+
+  tags = {
+    Name = "private"
+  }
+}
+
+data "cloudinit_config" "server_config_main" {
+  gzip          = true
+  base64_encode = true
+  part {
+    content_type = "text/cloud-config"
+    content      = file("./cloud-init/main.yaml")
+  }
+}
+
+data "cloudinit_config" "server_config_worker" {
+  gzip          = true
+  base64_encode = true
+  part {
+    content_type = "text/cloud-config"
+    content      = file("./cloud-init/worker.yaml")
+  }
+}
+
+resource "aws_instance" "node-001" {
+  ami                    = lookup(var.private_amis, var.aws_region)
+  availability_zone      = var.aws_az
+  instance_type          = var.private_instance_type
+  key_name               = var.aws_key_name
+  vpc_security_group_ids = ["${aws_security_group.private.id}"]
+  subnet_id              = aws_subnet.us-east2-private.id
+  source_dest_check      = false
+  user_data              = data.cloudinit_config.server_config_worker.rendered
+  iam_instance_profile   = aws_iam_instance_profile.describe_ec2.name
+  private_ip             = "10.0.1.101"
+  root_block_device {
+    volume_size           = 512
+    volume_type           = "standard"
+    delete_on_termination = true
+  }
+  ebs_block_device {
+    device_name           = "/dev/sdz"
+    volume_size           = 256
+    volume_type           = "standard"
+    delete_on_termination = true
+  }
+
+  ebs_block_device {
+    device_name           = "/dev/sdy"
+    volume_size           = 256
+    volume_type           = "standard"
+    delete_on_termination = true
+  }
+
+  ebs_block_device {
+    device_name           = "/dev/sdx"
+    volume_size           = 256
+    volume_type           = "standard"
+    delete_on_termination = true
+  }
+
+  tags = {
+    Name    = "node-001"
+    Role    = "main"
+    Cluster = "bluedata"
+  }
+
+  depends_on = [
+    aws_nat_gateway.nat
+  ]
+}
+/*
+resource "aws_instance" "node-002" {
+    ami = "${lookup(var.private_amis, var.aws_region)}"
+    availability_zone = "us-east-2a"
+    instance_type = var.private_instance_type 
+    key_name = "${var.aws_key_name}"
+    vpc_security_group_ids = ["${aws_security_group.private.id}"]
+    subnet_id = "${aws_subnet.us-east2-private.id}"
+    source_dest_check = false
+    user_data = data.cloudinit_config.server_config_worker.rendered
+    private_ip = "10.0.1.102"
+    root_block_device {
+      volume_size = 512 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+    ebs_block_device {
+      device_name = "/dev/sdz"
+      volume_size = 256 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    ebs_block_device {
+      device_name = "/dev/sdy"
+      volume_size = 256
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    ebs_block_device {
+      device_name = "/dev/sdx"
+      volume_size = 256
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+
+    tags = {
+        Name = "node-002"
+        Role = "worker"
+        Cluster = "bluedata"
+    }
+
+    depends_on = [
+      aws_nat_gateway.nat
+    ]
+}
+
+resource "aws_instance" "node-003" {
+    ami = "${lookup(var.private_amis, var.aws_region)}"
+    availability_zone = "us-east-2a"
+    instance_type = var.private_instance_type 
+    key_name = "${var.aws_key_name}"
+    vpc_security_group_ids = ["${aws_security_group.private.id}"]
+    subnet_id = "${aws_subnet.us-east2-private.id}"
+    source_dest_check = false
+    user_data = data.cloudinit_config.server_config_worker.rendered
+    private_ip = "10.0.1.103"
+    root_block_device {
+      volume_size = 512 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+    ebs_block_device {
+      device_name = "/dev/sdz"
+      volume_size = 256 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    ebs_block_device {
+      device_name = "/dev/sdy"
+      volume_size = 256
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    ebs_block_device {
+      device_name = "/dev/sdx"
+      volume_size = 256
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+
+    tags = {
+        Name = "node-003"
+        Role = "worker"
+        Cluster = "bluedata"
+    }
+
+    depends_on = [
+      aws_nat_gateway.nat
+    ]
+}
+
+resource "aws_instance" "node-004" {
+    ami = "${lookup(var.private_amis, var.aws_region)}"
+    availability_zone = "us-east-2a"
+    instance_type = var.private_instance_type 
+    key_name = "${var.aws_key_name}"
+    vpc_security_group_ids = ["${aws_security_group.private.id}"]
+    subnet_id = "${aws_subnet.us-east2-private.id}"
+    source_dest_check = false
+    user_data = data.cloudinit_config.server_config_worker.rendered
+    private_ip = "10.0.1.104"
+    root_block_device {
+      volume_size = 512 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+    ebs_block_device {
+      device_name = "/dev/sdz"
+      volume_size = 256 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    ebs_block_device {
+      device_name = "/dev/sdy"
+      volume_size = 256
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    ebs_block_device {
+      device_name = "/dev/sdx"
+      volume_size = 256
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    tags = {
+        Name = "node-004"
+        Role = "worker"
+        Cluster = "bluedata"
+    }
+
+    depends_on = [
+      aws_nat_gateway.nat
+    ]
+}
+
+resource "aws_instance" "gw-001" {
+    ami = "${lookup(var.private_amis, var.aws_region)}"
+    availability_zone = "us-east-2a"
+    instance_type = var.private_instance_type 
+    key_name = "${var.aws_key_name}"
+    vpc_security_group_ids = ["${aws_security_group.private.id}"]
+    subnet_id = "${aws_subnet.us-east2-private.id}"
+    source_dest_check = false
+    user_data = data.cloudinit_config.server_config_worker.rendered
+    private_ip = "10.0.1.200"
+
+    root_block_device {
+      volume_size = 64 
+      volume_type = "standard"
+      delete_on_termination = true
+    }
+
+    tags = {
+        Name = "gw-001"
+        Role = "gateway"
+        Cluster = "bluedata"
+    }
+
+
+    depends_on = [
+      aws_nat_gateway.nat
+    ]
+}
+
+
+
+*/

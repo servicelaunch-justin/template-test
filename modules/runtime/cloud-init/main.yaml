@@ -1,0 +1,40 @@
+
+fs_setup:
+  - label: opt
+    filesystem: ext4
+    device: /dev/xvdz 
+    partition: auto
+
+mounts:
+ - [ "/dev/xvdz", "/opt", "ext4", "defaults", "0", "2" ]
+
+ssh_pwauth: true 
+
+users:
+  - default
+  - name: bluedata 
+    gecos: bluedata 
+    shell: /bin/bash
+    primary_group: bdcs
+    groups: users, admin, shadow, wheel
+    lock_passwd: false 
+    passwd: $1$2mTqKlOR$E9UTqfNLzKo8nfdVt7oOi0  #bluedata
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+
+
+runcmd:
+  # https://bugzilla.redhat.com/show_bug.cgi?id=1424612
+  # sudo tail -f /var/log/messages |grep cloud-init  
+  - echo " -=-=-=-=-= start user_data script =-=-=-=-=-=- "
+  #- echo "root:root" | chpasswd
+  - yum update --assumeyes
+  ### 5.3
+  #- curl -OL https://bdk8s.s3.us-east-2.amazonaws.com/5.3/3031/hpe-cp-rhel-release-5.3-3031.bin 
+  #- chmod u+x ./hpe-cp-rhel-release-5.3-3031.bin
+  #- ./hpe-cp-rhel-release-5.3-3031.bin --skipeula --default-password abc123none
+  ### 5.4
+  - curl -OL https://ezmeral-platform-releases.s3.amazonaws.com/5.4/3064/hpe-cp-rhel-release-5.4-3064.bin
+  - chmod u+x ./hpe-cp-rhel-release-5.4-3064.bin
+  #- ./hpe-cp-rhel-release-5.4-3064.bin --skipeula --default-password abc123none
+  - echo " -=-=-=-=-= end user_data script =-=-=-=-=-=- "

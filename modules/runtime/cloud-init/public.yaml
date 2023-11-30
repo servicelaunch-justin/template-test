@@ -1,0 +1,32 @@
+package_update: true
+packages:
+ - wireguard-tools
+ - nginx-light
+
+write_files: 
+  - path: /etc/wireguard/wg0.conf
+    owner: root:root
+    permissions: "0600"
+    #ToDo:  treat the PrivateKey with care.. ?create it on the fly, encrypte it with sops?
+    content: |
+      [Interface]
+      PrivateKey = WF59Nc/5fM0/THJs2zb/wqfBee2guDpp+dFNFOYDx0Q=
+      Address = 10.0.2.1/24
+      PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+      PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+      ListenPort = 51820
+
+      [Peer]
+      PublicKey = vQabRHTr8rg7DkbHcTOKLU4WYEjciLgAqHxzKS7c8gc= 
+      AllowedIPs = 10.0.2.0/24 
+      PersistentKeepalive = 25 
+
+runcmd:
+  # /var/log/cloud-init-output.log
+  - echo " -=-=-=-=-= start user_data script =-=-=-=-=-=- "
+  - systemctl enable wg-quick@wg0.service 
+  - systemctl daemon-reload
+  - systemctl start wg-quick@wg0.service 
+  - curl -L -o /var/www/html/hpe-cp-rhel-release-5.4.1-3073.bin https://ezmeral-platform-releases.s3.amazonaws.com/5.4.1/3073/hpe-cp-rhel-release-5.4.1-3073.bin
+  - touch /var/www/html/$(md5sum /var/www/html/hpe-cp-rhel-release-5.4.1-3073.bin |awk '{print $1}')
+  - echo " -=-=-=-=-= end user_data script =-=-=-=-=-=- "

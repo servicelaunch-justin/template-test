@@ -1,0 +1,39 @@
+ansible_user: ec2-user
+
+#Influx DB
+influxdb_primary_org: "example-org"
+influxdb_primary_bucket: "example-bucket"
+influxdb_primary_username: "service-launch"
+influxdb_primary_password: "$VC-L@unch123"
+
+# Set your root token for admin user
+influxdb_admin_token: "SL-EXAMPLE-TOKEN123"
+
+#Telegraf
+telegraf_influxdb_username: "service-launch"
+telegraf_influxdb_password: "$VC-L@unch123"
+telegraf_influxdb_user_agent:
+telegraf_influxdb_udp_payload:
+
+# for v2 output
+telegraf_influxdb_v2: true
+telegraf_influxdb_token: "SL-EXAMPLE-TOKEN123"
+telegraf_influxdb_organization: "example-org"
+telegraf_influxdb_bucket: "example-bucket"
+
+#Redis
+redis_port: 6379
+redis_bind_interface: 127.0.0.1
+redis_unixsocket: ''
+redis_timeout: 300
+redis_loglevel: "notice"
+redis_logfile: /var/log/redis/redis-server.log
+redis_databases: 16
+redis_save:
+  - 900 1
+  - 300 10
+  - 60 10000
+redis_rdbcompression: "yes"
+redis_dbfilename: dump.rdb
+redis_dbdir: /var/lib/redis
+redis_maxmemory: 0

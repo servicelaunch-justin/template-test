@@ -1,0 +1,26 @@
+---
+- name: Prepare
+  hosts: all
+  tasks:
+    - name: Install TLS certificate
+      ansible.builtin.copy:
+        dest: "{{ item }}"
+        group: root
+        mode: "0644"
+        owner: root
+        src: influxdb-selfsigned.crt
+      loop:
+        - /etc/ssl/influxdb-selfsigned.crt
+        - /usr/local/share/ca-certificates/
+
+    - name: Update trusted certificates
+      ansible.builtin.command: update-ca-certificates
+      changed_when: false
+
+    - name: Install TLS key
+      ansible.builtin.copy:
+        dest: /etc/ssl/influxdb-selfsigned.key
+        group: root
+        mode: "0644"
+        owner: root
+        src: influxdb-selfsigned.key

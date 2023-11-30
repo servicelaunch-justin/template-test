@@ -1,0 +1,180 @@
+
+/*
+  Public Server(s)
+*/
+resource "aws_security_group" "public" {
+  name        = "vpc_public"
+  description = "Allow incoming HTTP connections."
+
+  /*
+    ingress {
+        from_port = 80
+        to_port = 80
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+
+    ingress {
+        from_port = 443
+        to_port = 443
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    */
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # wireguard wg0 
+  ingress {
+    from_port   = 51820
+    to_port     = 51820
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 51820
+    to_port     = 51820
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 9443
+    to_port     = 9443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 8044
+    to_port     = 8044
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+  egress {
+    from_port   = 8090
+    to_port     = 8090
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["${var.private_subnet_cidr}"]
+  }
+
+
+
+  /*egress { # SQL Server
+        from_port = 1433
+        to_port = 1433
+        protocol = "tcp"
+        cidr_blocks = ["${var.private_subnet_cidr}"]
+    }
+    egress { # MySQL
+        from_port = 3306
+        to_port = 3306
+        protocol = "tcp"
+        cidr_blocks = ["${var.private_subnet_cidr}"]
+    }
+    */
+
+  vpc_id = aws_vpc.default.id
+
+  tags = {
+    Name = "public"
+  }
+}
+
+resource "tls_private_key" "root_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "tls_private_key" "bluedata_ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+data "cloudinit_config" "server_config_public" {
+  gzip          = true
+  base64_encode = true
+  part {
+    content_type = "text/cloud-config"
+    content      = file("./cloud-init/public.yaml")
+  }
+}
+
+resource "aws_instance" "public-001" {
+  ami                         = lookup(var.public_amis, var.aws_region)
+  availability_zone           = var.aws_az
+  instance_type               = var.public_instance_type
+  key_name                    = var.aws_key_name
+  vpc_security_group_ids      = ["${aws_security_group.public.id}"]
+  subnet_id                   = aws_subnet.us-east2-public.id
+  associate_public_ip_address = true
+  source_dest_check           = false
+  private_ip                  = "10.0.0.10"
+  user_data                   = data.cloudinit_config.server_config_public.rendered
+
+  tags = {
+    Name = "public-001"
+  }
+
+  depends_on = [
+    aws_nat_gateway.nat
+  ]
+}
+
+resource "aws_eip" "public" {
+  instance = aws_instance.public-001.id
+  vpc      = true
+}
