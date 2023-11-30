@@ -1,0 +1,9 @@
+- name: restart_apache
+  service:
+    name: apache2
+    state: restarted
+
+- name: restart_apt_cacher
+  service:
+    name: apt-cacher
+    state: restarted

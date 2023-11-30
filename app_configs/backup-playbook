@@ -1,0 +1,25 @@
+---
+
+- hosts: influx_host
+  become: true
+  roles:
+      - influxdb
+    
+  vars_files:
+      - /opt/ansible/var_files/influx.yaml  
+ 
+- hosts: influx_host
+  become: true
+  roles:
+      - telegraf
+
+  vars_files:
+    - /opt/ansible/var_files/telegraf.yaml
+
+- hosts: influx_host
+  become: true
+  roles:
+      - redis
+
+  vars_files:
+    - /opt/ansible/var_files/redis.yaml   
